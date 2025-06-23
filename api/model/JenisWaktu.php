@@ -1,8 +1,9 @@
 <?php
+
 class JenisWaktu {
     public $conn;
-    public $table = 'jenis_waktu'; // sesuaikan dengan nama tabel Anda
-    
+    public $table = 'jenis_waktu';
+
     public function __construct($db) {
         $this->conn = $db;
     }
@@ -10,27 +11,26 @@ class JenisWaktu {
     public function getAll() {
         $stmt = $this->conn->prepare("SELECT * FROM {$this->table}");
         $stmt->execute();
-        return $stmt;
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function getById($id) {
         $stmt = $this->conn->prepare("SELECT * FROM {$this->table} WHERE id = ?");
         $stmt->execute([$id]);
-        return $stmt;
+        return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
     public function create($nama) {
         $stmt = $this->conn->prepare("INSERT INTO {$this->table} (nama) VALUES (?)");
-        return $stmt->execute([$nama]);
+        $result = $stmt->execute([$nama]);
+        if ($result) {
+            return $this->conn->lastInsertId();
+        }
+        return false;
     }
-
-    public function update($id, $nama) {
-        $stmt = $this->conn->prepare("UPDATE {$this->table} SET nama = ? WHERE id = ?");
-        return $stmt->execute([$nama, $id]);
-    }
-
     public function delete($id) {
-        $stmt = $this->conn->prepare("DELETE FROM {$this->table} WHERE id = ?");
-        return $stmt->execute([$id]);
-    }
+    $query = "DELETE FROM {$this->table} WHERE id = ?";
+    $stmt = $this->conn->prepare($query);
+    return $stmt->execute([$id]);
+}
 }
