@@ -1,4 +1,5 @@
 <?php
+// Fixed Notifikasi.php model
 class Notifikasi {
     public $conn;
     public $table = "notifikasi";
@@ -59,7 +60,29 @@ class Notifikasi {
         return $stmt;
     }
 
-    public function create() {
+    // Fixed create method - now accepts data parameter and validates foreign keys
+    public function create($data = null) {
+        // If data is provided, populate object properties
+        if ($data) {
+            $this->user_id = isset($data->user_id) ? $data->user_id : null;
+            $this->pesan = isset($data->pesan) ? $data->pesan : null;
+            $this->is_read = isset($data->is_read) ? $data->is_read : 0;
+        }
+
+        // Validate required fields
+        if (empty($this->user_id)) {
+            throw new Exception("User ID is required");
+        }
+        if (empty($this->pesan)) {
+            throw new Exception("Pesan is required");
+        }
+
+        // Validate foreign keys
+        $errors = $this->validateForeignKeys();
+        if (!empty($errors)) {
+            throw new Exception(implode(", ", $errors));
+        }
+
         $query = "INSERT INTO {$this->table} (user_id, pesan, is_read, created_at) 
                   VALUES (:user_id, :pesan, :is_read, NOW())";
         $stmt = $this->conn->prepare($query);
@@ -135,6 +158,7 @@ class Notifikasi {
         return $row['total'];
     }
 
+    // Enhanced validation with better error handling
     public function validateForeignKeys() {
         $errors = array();
         
@@ -144,7 +168,7 @@ class Notifikasi {
             $stmt = $this->conn->prepare($query);
             $stmt->execute([$this->user_id]);
             if ($stmt->rowCount() == 0) {
-                $errors[] = "User ID tidak valid";
+                $errors[] = "User dengan ID {$this->user_id} tidak ditemukan";
             }
         }
         
@@ -158,5 +182,12 @@ class Notifikasi {
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return $row['total'];
     }
+
+    // Helper method to get all valid user IDs
+    public function getValidUserIds() {
+        $query = "SELECT id, username FROM users ORDER BY id ASC";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }
-?>

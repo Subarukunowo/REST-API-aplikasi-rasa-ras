@@ -1,6 +1,6 @@
 <?php
 require_once '../conf/db_config.php';
-require_once '../../model/Rating.php';
+require_once '../model/Rating.php';
 
 $data = json_decode(file_get_contents("php://input"));
 

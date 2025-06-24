@@ -12,9 +12,18 @@ if (isset($_GET['id'])) {
     $stmt = $db->prepare("SELECT * FROM profil WHERE id = ?");
     $stmt->execute([$_GET['id']]);
     $data = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($data) {
+        echo json_encode($data);
+    } else {
+        http_response_code(404);
+        echo json_encode([
+            "success" => false,
+            "message" => "Profil dengan ID tersebut tidak ditemukan."
+        ]);
+    }
 } else {
     $stmt = $db->query("SELECT * FROM profil");
     $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    echo json_encode($data);
 }
-
-echo json_encode($data);

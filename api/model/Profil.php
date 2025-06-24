@@ -89,18 +89,16 @@ class Profil {
         return $stmt->execute();
     }
 
-    public function delete() {
-        $query = "DELETE FROM {$this->table} WHERE id = ? AND user_id = ?";
-        $stmt = $this->conn->prepare($query);
-        
-        $this->id = htmlspecialchars(strip_tags($this->id));
-        $this->user_id = htmlspecialchars(strip_tags($this->user_id));
-        
-        $stmt->bindParam(1, $this->id);
-        $stmt->bindParam(2, $this->user_id);
-        
-        return $stmt->execute();
-    }
+   public function delete() {
+    $query = "DELETE FROM {$this->table} WHERE id = ?";
+    $stmt = $this->conn->prepare($query);
+    
+    $this->id = htmlspecialchars(strip_tags($this->id));
+    
+    $stmt->bindParam(1, $this->id);
+    
+    return $stmt->execute();
+}
 
     public function userHasProfile($user_id) {
         $query = "SELECT id FROM {$this->table} WHERE user_id = ?";

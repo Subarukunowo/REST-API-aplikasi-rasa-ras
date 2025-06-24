@@ -15,7 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit();
 }
 
-include_once '../config/db_config.php';
+include_once '../conf/db_config.php';
 include_once '../model/Users.php';
 
 try {

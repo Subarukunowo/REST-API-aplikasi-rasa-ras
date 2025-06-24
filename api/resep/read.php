@@ -1,7 +1,7 @@
+// ========== READ RESEP (read_resep.php) ==========
 <?php
-// ===== FILE: api/resep/read.php =====
+header("Content-Type: application/json");
 header("Access-Control-Allow-Origin: *");
-header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Methods: GET");
 
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
@@ -96,3 +96,4 @@ try {
     http_response_code(500);
     echo json_encode(["success" => false, "message" => "Server error: " . $e->getMessage()]);
 }
+?>

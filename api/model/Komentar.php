@@ -47,7 +47,15 @@ class Komentar {
 
         return $stmt->execute();
     }
-
+public function getById($id) {
+    $query = "SELECT k.*, u.username FROM {$this->table} k
+              JOIN users u ON k.user_id = u.id
+              WHERE k.id = ?";
+    $stmt = $this->conn->prepare($query);
+    $stmt->bindParam(1, $id);
+    $stmt->execute();
+    return $stmt;
+}
     public function delete() {
         $query = "DELETE FROM {$this->table} WHERE id = ? AND user_id = ?";
         $stmt = $this->conn->prepare($query);

@@ -1,15 +1,11 @@
-<?// ===== FILE: api/resep/update.php =====
+// ========== UPDATE RESEP (update_resep.php) ==========
+<?php
+header("Content-Type: application/json");
 header("Access-Control-Allow-Origin: *");
-header("Content-Type: application/json; charset=UTF-8");
-header("Access-Control-Allow-Methods: PUT, PATCH");
-header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
+header("Access-Control-Allow-Methods: PUT");
+header("Access-Control-Allow-Headers: Content-Type");
 
-if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
-    http_response_code(200);
-    exit();
-}
-
-if (!in_array($_SERVER['REQUEST_METHOD'], ['PUT', 'PATCH'])) {
+if ($_SERVER['REQUEST_METHOD'] !== 'PUT') {
     http_response_code(405);
     echo json_encode(["success" => false, "message" => "Method not allowed"]);
     exit();
@@ -57,6 +53,22 @@ try {
         exit();
     }
     
+    // Validasi level kesulitan
+    if (!$resep->validateLevelKesulitan($data->level_kesulitan)) {
+        http_response_code(400);
+        echo json_encode(["success" => false, "message" => "Level kesulitan harus Mudah, Sedang, atau Sulit"]);
+        exit();
+    }
+    
+    // Validasi jenis waktu jika ada
+    if (isset($data->jenis_waktu) && !empty($data->jenis_waktu)) {
+        if (!$resep->validateJenisWaktu($data->jenis_waktu)) {
+            http_response_code(400);
+            echo json_encode(["success" => false, "message" => "Jenis waktu harus Sarapan, Makan Siang, atau Makan Malam"]);
+            exit();
+        }
+    }
+    
     // Set properties
     $resep->id = $data->id;
     $resep->user_id = $data->user_id;
@@ -66,8 +78,7 @@ try {
     $resep->bahan_utama = trim($data->bahan_utama);
     $resep->deskripsi = trim($data->deskripsi);
     $resep->level_kesulitan = $data->level_kesulitan;
-    $resep->waktu_id = isset($data->waktu_id) ? $data->waktu_id : null;
-    $resep->hidangan_id = isset($data->hidangan_id) ? $data->hidangan_id : null;
+    $resep->jenis_waktu = isset($data->jenis_waktu) ? $data->jenis_waktu : null;
     $resep->video = isset($data->video) ? trim($data->video) : null;
     
     // Validate foreign keys
@@ -97,3 +108,4 @@ try {
     http_response_code(500);
     echo json_encode(["success" => false, "message" => "Server error: " . $e->getMessage()]);
 }
+?>

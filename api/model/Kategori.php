@@ -49,14 +49,19 @@ class Kategori {
         return $stmt->execute();
     }
 
-    public function delete() {
-        $query = "DELETE FROM {$this->table} WHERE id = ?";
-        $stmt = $this->conn->prepare($query);
-        
-        $this->id = htmlspecialchars(strip_tags($this->id));
-        $stmt->bindParam(1, $this->id);
-        return $stmt->execute();
-    }
+   public function delete() {
+    $query = "DELETE FROM {$this->table} WHERE id = :id";
+    $stmt = $this->conn->prepare($query);
+
+    // Sanitasi nilai ID
+    $this->id = htmlspecialchars(strip_tags($this->id));
+
+    // Binding parameter
+    $stmt->bindParam(':id', $this->id, PDO::PARAM_INT);
+
+    // Eksekusi dan kembalikan hasilnya
+    return $stmt->execute();
+}
     
     public function nameExists() {
         $query = "SELECT id FROM {$this->table} WHERE nama = ? AND id != ?";

@@ -8,10 +8,29 @@ include_once "../model/Profil.php";
 $database = new Database();
 $db = $database->connect();
 
-if (isset($_GET['id'])) {
+$data = json_decode(file_get_contents("php://input"));
+
+if (!empty($data->id)) {
     $stmt = $db->prepare("DELETE FROM profil WHERE id = ?");
-    $result = $stmt->execute([$_GET['id']]);
-    echo json_encode(["success" => $result]);
+    $stmt->execute([$data->id]);
+
+    if ($stmt->rowCount() > 0) {
+        http_response_code(200);
+        echo json_encode([
+            "success" => true,
+            "message" => "Data berhasil dihapus."
+        ]);
+    } else {
+        http_response_code(404); // ❗ Data tidak ditemukan
+        echo json_encode([
+            "success" => false,
+            "message" => "Data gagal dihapus atau ID tidak ditemukan."
+        ]);
+    }
 } else {
-    echo json_encode(["error" => "ID tidak ditemukan."]);
+    http_response_code(400); // ❗ Bad Request
+    echo json_encode([
+        "success" => false,
+        "message" => "ID tidak ditemukan dalam permintaan."
+    ]);
 }

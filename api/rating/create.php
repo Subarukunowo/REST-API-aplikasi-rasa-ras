@@ -1,6 +1,6 @@
 <?php
 require_once '../conf/db_config.php';
-require_once '../../model/Rating.php';
+require_once '../model/Rating.php';
 
 
 $database = new Database();

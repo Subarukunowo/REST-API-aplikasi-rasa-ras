@@ -16,7 +16,7 @@ if (!in_array($_SERVER['REQUEST_METHOD'], ['PUT', 'PATCH'])) {
     exit();
 }
 
-include_once '../config/db_config.php';
+include_once '../conf/db_config.php';
 include_once '../model/Users.php';
 
 try {

@@ -1,8 +1,9 @@
 <?php
 class Resep {
-    public $conn;
-    public $table = 'resep';
+    private $conn;
+    private $table = 'resep';
     
+    // Properties sesuai dengan struktur database
     public $id;
     public $user_id;
     public $nama_masakan;
@@ -12,334 +13,206 @@ class Resep {
     public $deskripsi;
     public $created_at;
     public $level_kesulitan;
-    public $waktu_id;
-    public $hidangan_id;
+    public $jenis_waktu;
     public $video;
     
     public function __construct($db) {
         $this->conn = $db;
     }
     
-    // Method untuk mendapatkan semua data dengan join
-    public function getAll($limit = 0, $offset = 0) {
-        $query = "SELECT 
-                    r.id,
-                    r.user_id,
-                    r.nama_masakan,
-                    r.kategori_id,
-                    r.waktu_memasak,
-                    r.bahan_utama,
-                    r.deskripsi,
-                    r.created_at,
-                    r.level_kesulitan,
-                    r.waktu_id,
-                    r.hidangan_id,
-                    r.video,
-                    u.username as user_name,
-                    k.nama as kategori_nama,
-                    jw.nama as jenis_waktu,
-                    jh.nama as jenis_hidangan
-                  FROM {$this->table} r
-                  LEFT JOIN users u ON r.user_id = u.id
-                  LEFT JOIN kategori k ON r.kategori_id = k.id
-                  LEFT JOIN jenis_waktu jw ON r.waktu_id = jw.id
-                  LEFT JOIN jenis_hidangan jh ON r.hidangan_id = jh.id
-                  ORDER BY r.created_at DESC";
-        
-        if ($limit > 0) {
-            $query .= " LIMIT " . $limit;
-            if ($offset > 0) {
-                $query .= " OFFSET " . $offset;
-            }
-        }
+    // Create - Menambah resep baru
+    public function create() {
+        $query = "INSERT INTO " . $this->table . " 
+                 (user_id, nama_masakan, kategori_id, waktu_memasak, bahan_utama, deskripsi, level_kesulitan, jenis_waktu, video, created_at) 
+                 VALUES 
+                 (:user_id, :nama_masakan, :kategori_id, :waktu_memasak, :bahan_utama, :deskripsi, :level_kesulitan, :jenis_waktu, :video, NOW())";
         
         $stmt = $this->conn->prepare($query);
-        $stmt->execute();
-        return $stmt;
-    }
-    
-    // Method untuk mendapatkan data berdasarkan ID (return data)
-    public function getById($id) {
-        $query = "SELECT 
-                    r.id,
-                    r.user_id,
-                    r.nama_masakan,
-                    r.kategori_id,
-                    r.waktu_memasak,
-                    r.bahan_utama,
-                    r.deskripsi,
-                    r.created_at,
-                    r.level_kesulitan,
-                    r.waktu_id,
-                    r.hidangan_id,
-                    r.video,
-                    u.username as user_name,
-                    k.nama as kategori_nama,
-                    jw.nama as jenis_waktu,
-                    jh.nama as jenis_hidangan
-                  FROM {$this->table} r
-                  LEFT JOIN users u ON r.user_id = u.id
-                  LEFT JOIN kategori k ON r.kategori_id = k.id
-                  LEFT JOIN jenis_waktu jw ON r.waktu_id = jw.id
-                  LEFT JOIN jenis_hidangan jh ON r.hidangan_id = jh.id
-                  WHERE r.id = ? LIMIT 0,1";
-                  
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(1, $id);
-        $stmt->execute();
         
-        return $stmt->fetch(PDO::FETCH_ASSOC);
-    }
-    
-    // Method untuk load data ke properties object
-    public function loadById($id) {
-        $row = $this->getById($id);
+        // Bind parameters
+        $stmt->bindParam(':user_id', $this->user_id, PDO::PARAM_INT);
+        $stmt->bindParam(':nama_masakan', $this->nama_masakan, PDO::PARAM_STR);
+        $stmt->bindParam(':kategori_id', $this->kategori_id, PDO::PARAM_INT);
+        $stmt->bindParam(':waktu_memasak', $this->waktu_memasak, PDO::PARAM_INT);
+        $stmt->bindParam(':bahan_utama', $this->bahan_utama, PDO::PARAM_STR);
+        $stmt->bindParam(':deskripsi', $this->deskripsi, PDO::PARAM_STR);
+        $stmt->bindParam(':level_kesulitan', $this->level_kesulitan, PDO::PARAM_STR);
+        $stmt->bindParam(':jenis_waktu', $this->jenis_waktu, PDO::PARAM_STR);
+        $stmt->bindParam(':video', $this->video, PDO::PARAM_STR);
         
-        if($row) {
-            $this->id = $row['id'];
-            $this->user_id = $row['user_id'];
-            $this->nama_masakan = $row['nama_masakan'];
-            $this->kategori_id = $row['kategori_id'];
-            $this->waktu_memasak = $row['waktu_memasak'];
-            $this->bahan_utama = $row['bahan_utama'];
-            $this->deskripsi = $row['deskripsi'];
-            $this->created_at = $row['created_at'];
-            $this->level_kesulitan = $row['level_kesulitan'];
-            $this->waktu_id = $row['waktu_id'];
-            $this->hidangan_id = $row['hidangan_id'];
-            $this->video = $row['video'];
+        if ($stmt->execute()) {
             return true;
         }
         return false;
     }
     
-    // Method untuk search resep
-    public function search($keyword, $kategori_id = null, $level_kesulitan = null) {
-        $query = "SELECT 
-                    r.id,
-                    r.user_id,
-                    r.nama_masakan,
-                    r.kategori_id,
-                    r.waktu_memasak,
-                    r.bahan_utama,
-                    r.deskripsi,
-                    r.created_at,
-                    r.level_kesulitan,
-                    r.waktu_id,
-                    r.hidangan_id,
-                    r.video,
-                    u.username as user_name,
-                    k.nama as kategori_nama,
-                    jw.nama as jenis_waktu,
-                    jh.nama as jenis_hidangan
-                  FROM {$this->table} r
-                  LEFT JOIN users u ON r.user_id = u.id
-                  LEFT JOIN kategori k ON r.kategori_id = k.id
-                  LEFT JOIN jenis_waktu jw ON r.waktu_id = jw.id
-                  LEFT JOIN jenis_hidangan jh ON r.hidangan_id = jh.id
-                  WHERE (r.nama_masakan LIKE ? OR r.bahan_utama LIKE ? OR r.deskripsi LIKE ?)";
+    // Read - Mendapatkan semua resep
+    public function getAll($limit = 0, $offset = 0) {
+        $query = "SELECT r.*, u.username as user_name 
+                 FROM " . $this->table . " r 
+                 LEFT JOIN users u ON r.user_id = u.id 
+                 ORDER BY r.created_at DESC";
         
-        $params = ["%$keyword%", "%$keyword%", "%$keyword%"];
+        if ($limit > 0) {
+            $query .= " LIMIT :limit OFFSET :offset";
+        }
+        
+        $stmt = $this->conn->prepare($query);
+        
+        if ($limit > 0) {
+            $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
+            $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
+        }
+        
+        $stmt->execute();
+        return $stmt;
+    }
+    
+    // Read - Mendapatkan resep berdasarkan ID
+    public function getById($id) {
+        $query = "SELECT r.*, u.username as user_name 
+                 FROM " . $this->table . " r 
+                 LEFT JOIN users u ON r.user_id = u.id 
+                 WHERE r.id = :id";
+        
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+        $stmt->execute();
+        
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+    
+    // Read - Mendapatkan resep berdasarkan user ID
+    public function getByUserId($user_id) {
+        $query = "SELECT r.*, u.username as user_name 
+                 FROM " . $this->table . " r 
+                 LEFT JOIN users u ON r.user_id = u.id 
+                 WHERE r.user_id = :user_id 
+                 ORDER BY r.created_at DESC";
+        
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
+        $stmt->execute();
+        
+        return $stmt;
+    }
+    
+    // Search - Mencari resep berdasarkan kriteria
+    public function search($keyword, $kategori_id = null, $level_kesulitan = null) {
+        $query = "SELECT r.*, u.username as user_name 
+                 FROM " . $this->table . " r 
+                 LEFT JOIN users u ON r.user_id = u.id 
+                 WHERE (r.nama_masakan LIKE :keyword OR r.bahan_utama LIKE :keyword OR r.deskripsi LIKE :keyword)";
         
         if ($kategori_id) {
-            $query .= " AND r.kategori_id = ?";
-            $params[] = $kategori_id;
+            $query .= " AND r.kategori_id = :kategori_id";
         }
         
         if ($level_kesulitan) {
-            $query .= " AND r.level_kesulitan = ?";
-            $params[] = $level_kesulitan;
+            $query .= " AND r.level_kesulitan = :level_kesulitan";
         }
         
         $query .= " ORDER BY r.created_at DESC";
         
         $stmt = $this->conn->prepare($query);
-        $stmt->execute($params);
-        return $stmt;
-    }
-    
-    // Method untuk mendapatkan resep berdasarkan user
-    public function getByUserId($user_id) {
-        $query = "SELECT 
-                    r.id,
-                    r.user_id,
-                    r.nama_masakan,
-                    r.kategori_id,
-                    r.waktu_memasak,
-                    r.bahan_utama,
-                    r.deskripsi,
-                    r.created_at,
-                    r.level_kesulitan,
-                    r.waktu_id,
-                    r.hidangan_id,
-                    r.video,
-                    k.nama as kategori_nama,
-                    jw.nama as jenis_waktu,
-                    jh.nama as jenis_hidangan
-                  FROM {$this->table} r
-                  LEFT JOIN kategori k ON r.kategori_id = k.id
-                  LEFT JOIN jenis_waktu jw ON r.waktu_id = jw.id
-                  LEFT JOIN jenis_hidangan jh ON r.hidangan_id = jh.id
-                  WHERE r.user_id = ?
-                  ORDER BY r.created_at DESC";
-                  
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(1, $user_id);
+        
+        $keyword = "%{$keyword}%";
+        $stmt->bindParam(':keyword', $keyword, PDO::PARAM_STR);
+        
+        if ($kategori_id) {
+            $stmt->bindParam(':kategori_id', $kategori_id, PDO::PARAM_INT);
+        }
+        
+        if ($level_kesulitan) {
+            $stmt->bindParam(':level_kesulitan', $level_kesulitan, PDO::PARAM_STR);
+        }
+        
         $stmt->execute();
         return $stmt;
     }
     
-    // Method untuk membuat resep baru
-    public function create() {
-        $query = "INSERT INTO {$this->table} 
-                    (user_id, nama_masakan, kategori_id, waktu_memasak, bahan_utama, 
-                     deskripsi, level_kesulitan, waktu_id, hidangan_id, video, created_at) 
-                  VALUES 
-                    (:user_id, :nama_masakan, :kategori_id, :waktu_memasak, :bahan_utama, 
-                     :deskripsi, :level_kesulitan, :waktu_id, :hidangan_id, :video, NOW())";
-                     
-        $stmt = $this->conn->prepare($query);
-        
-        // Sanitize input
-        $this->user_id = htmlspecialchars(strip_tags($this->user_id));
-        $this->nama_masakan = htmlspecialchars(strip_tags($this->nama_masakan));
-        $this->kategori_id = htmlspecialchars(strip_tags($this->kategori_id));
-        $this->waktu_memasak = htmlspecialchars(strip_tags($this->waktu_memasak));
-        $this->bahan_utama = htmlspecialchars(strip_tags($this->bahan_utama));
-        $this->deskripsi = htmlspecialchars(strip_tags($this->deskripsi));
-        $this->level_kesulitan = htmlspecialchars(strip_tags($this->level_kesulitan));
-        $this->waktu_id = htmlspecialchars(strip_tags($this->waktu_id));
-        $this->hidangan_id = htmlspecialchars(strip_tags($this->hidangan_id));
-        $this->video = htmlspecialchars(strip_tags($this->video));
-        
-        // Bind data
-        $stmt->bindParam(':user_id', $this->user_id);
-        $stmt->bindParam(':nama_masakan', $this->nama_masakan);
-        $stmt->bindParam(':kategori_id', $this->kategori_id);
-        $stmt->bindParam(':waktu_memasak', $this->waktu_memasak);
-        $stmt->bindParam(':bahan_utama', $this->bahan_utama);
-        $stmt->bindParam(':deskripsi', $this->deskripsi);
-        $stmt->bindParam(':level_kesulitan', $this->level_kesulitan);
-        $stmt->bindParam(':waktu_id', $this->waktu_id);
-        $stmt->bindParam(':hidangan_id', $this->hidangan_id);
-        $stmt->bindParam(':video', $this->video);
-        
-        return $stmt->execute();
-    }
-    
-    // Method untuk update resep
+    // Update - Mengupdate resep
     public function update() {
-        $query = "UPDATE {$this->table} SET 
-                    nama_masakan = :nama_masakan,
-                    kategori_id = :kategori_id,
-                    waktu_memasak = :waktu_memasak,
-                    bahan_utama = :bahan_utama,
-                    deskripsi = :deskripsi,
-                    level_kesulitan = :level_kesulitan,
-                    waktu_id = :waktu_id,
-                    hidangan_id = :hidangan_id,
-                    video = :video
-                  WHERE id = :id AND user_id = :user_id";
-                  
+        $query = "UPDATE " . $this->table . " 
+                 SET user_id = :user_id,
+                     nama_masakan = :nama_masakan,
+                     kategori_id = :kategori_id,
+                     waktu_memasak = :waktu_memasak,
+                     bahan_utama = :bahan_utama,
+                     deskripsi = :deskripsi,
+                     level_kesulitan = :level_kesulitan,
+                     jenis_waktu = :jenis_waktu,
+                     video = :video
+                 WHERE id = :id";
+        
         $stmt = $this->conn->prepare($query);
         
-        // Sanitize input
-        $this->nama_masakan = htmlspecialchars(strip_tags($this->nama_masakan));
-        $this->kategori_id = htmlspecialchars(strip_tags($this->kategori_id));
-        $this->waktu_memasak = htmlspecialchars(strip_tags($this->waktu_memasak));
-        $this->bahan_utama = htmlspecialchars(strip_tags($this->bahan_utama));
-        $this->deskripsi = htmlspecialchars(strip_tags($this->deskripsi));
-        $this->level_kesulitan = htmlspecialchars(strip_tags($this->level_kesulitan));
-        $this->waktu_id = htmlspecialchars(strip_tags($this->waktu_id));
-        $this->hidangan_id = htmlspecialchars(strip_tags($this->hidangan_id));
-        $this->video = htmlspecialchars(strip_tags($this->video));
-        $this->id = htmlspecialchars(strip_tags($this->id));
-        $this->user_id = htmlspecialchars(strip_tags($this->user_id));
+        // Bind parameters
+        $stmt->bindParam(':id', $this->id, PDO::PARAM_INT);
+        $stmt->bindParam(':user_id', $this->user_id, PDO::PARAM_INT);
+        $stmt->bindParam(':nama_masakan', $this->nama_masakan, PDO::PARAM_STR);
+        $stmt->bindParam(':kategori_id', $this->kategori_id, PDO::PARAM_INT);
+        $stmt->bindParam(':waktu_memasak', $this->waktu_memasak, PDO::PARAM_INT);
+        $stmt->bindParam(':bahan_utama', $this->bahan_utama, PDO::PARAM_STR);
+        $stmt->bindParam(':deskripsi', $this->deskripsi, PDO::PARAM_STR);
+        $stmt->bindParam(':level_kesulitan', $this->level_kesulitan, PDO::PARAM_STR);
+        $stmt->bindParam(':jenis_waktu', $this->jenis_waktu, PDO::PARAM_STR);
+        $stmt->bindParam(':video', $this->video, PDO::PARAM_STR);
         
-        // Bind data
-        $stmt->bindParam(':nama_masakan', $this->nama_masakan);
-        $stmt->bindParam(':kategori_id', $this->kategori_id);
-        $stmt->bindParam(':waktu_memasak', $this->waktu_memasak);
-        $stmt->bindParam(':bahan_utama', $this->bahan_utama);
-        $stmt->bindParam(':deskripsi', $this->deskripsi);
-        $stmt->bindParam(':level_kesulitan', $this->level_kesulitan);
-        $stmt->bindParam(':waktu_id', $this->waktu_id);
-        $stmt->bindParam(':hidangan_id', $this->hidangan_id);
-        $stmt->bindParam(':video', $this->video);
-        $stmt->bindParam(':id', $this->id);
-        $stmt->bindParam(':user_id', $this->user_id);
-        
-        return $stmt->execute();
+        if ($stmt->execute()) {
+            return true;
+        }
+        return false;
     }
     
-    // Method untuk delete resep
+    // Delete - Menghapus resep
     public function delete() {
-        $query = "DELETE FROM {$this->table} WHERE id = ? AND user_id = ?";
+        $query = "DELETE FROM " . $this->table . " WHERE id = :id";
+        
         $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':id', $this->id, PDO::PARAM_INT);
         
-        $this->id = htmlspecialchars(strip_tags($this->id));
-        $this->user_id = htmlspecialchars(strip_tags($this->user_id));
-        
-        $stmt->bindParam(1, $this->id);
-        $stmt->bindParam(2, $this->user_id);
-        
-        return $stmt->execute();
+        if ($stmt->execute()) {
+            return true;
+        }
+        return false;
     }
     
-    // Method untuk validasi foreign key
+    // Validasi foreign keys
     public function validateForeignKeys() {
-        $errors = array();
+        $errors = [];
         
-        // Check user_id
-        if ($this->user_id) {
-            $query = "SELECT id FROM users WHERE id = ?";
-            $stmt = $this->conn->prepare($query);
-            $stmt->execute([$this->user_id]);
-            if ($stmt->rowCount() == 0) {
-                $errors[] = "User ID tidak valid";
-            }
+        // Validasi user_id
+        $query = "SELECT id FROM users WHERE id = :user_id";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':user_id', $this->user_id, PDO::PARAM_INT);
+        $stmt->execute();
+        if ($stmt->rowCount() == 0) {
+            $errors[] = "User ID tidak valid";
         }
         
-        // Check kategori_id
-        if ($this->kategori_id) {
-            $query = "SELECT id FROM kategori WHERE id = ?";
-            $stmt = $this->conn->prepare($query);
-            $stmt->execute([$this->kategori_id]);
-            if ($stmt->rowCount() == 0) {
-                $errors[] = "Kategori ID tidak valid";
-            }
-        }
-        
-        // Check waktu_id
-        if ($this->waktu_id) {
-            $query = "SELECT id FROM jenis_waktu WHERE id = ?";
-            $stmt = $this->conn->prepare($query);
-            $stmt->execute([$this->waktu_id]);
-            if ($stmt->rowCount() == 0) {
-                $errors[] = "Waktu ID tidak valid";
-            }
-        }
-        
-        // Check hidangan_id
-        if ($this->hidangan_id) {
-            $query = "SELECT id FROM jenis_hidangan WHERE id = ?";
-            $stmt = $this->conn->prepare($query);
-            $stmt->execute([$this->hidangan_id]);
-            if ($stmt->rowCount() == 0) {
-                $errors[] = "Hidangan ID tidak valid";
-            }
+        // Validasi kategori_id (jika ada tabel kategori)
+        $query = "SELECT id FROM kategori WHERE id = :kategori_id";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':kategori_id', $this->kategori_id, PDO::PARAM_INT);
+        $stmt->execute();
+        if ($stmt->rowCount() == 0) {
+            $errors[] = "Kategori ID tidak valid";
         }
         
         return $errors;
     }
     
-    // Method untuk count total resep
-    public function countAll() {
-        $query = "SELECT COUNT(*) as total FROM {$this->table}";
-        $stmt = $this->conn->prepare($query);
-        $stmt->execute();
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        return $row['total'];
+    // Validasi level kesulitan
+    public function validateLevelKesulitan($level) {
+        $valid_levels = ['Mudah', 'Sedang', 'Sulit'];
+        return in_array($level, $valid_levels);
+    }
+    
+    // Validasi jenis waktu
+    public function validateJenisWaktu($jenis) {
+        $valid_jenis = ['Sarapan', 'Makan Siang', 'Makan Malam'];
+        return in_array($jenis, $valid_jenis);
     }
 }
 ?>
