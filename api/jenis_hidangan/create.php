@@ -5,8 +5,11 @@ header("Access-Control-Allow-Methods: POST");
 header("Access-Control-Max-Age: 3600");
 header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
 
-include_once '../config/db_config.php';
-include_once '../model/JenisHidangan.php';
+// Handle preflight OPTIONS request
+if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
 
 // Check request method
 if ($_SERVER['REQUEST_METHOD'] != 'POST') {
@@ -17,6 +20,9 @@ if ($_SERVER['REQUEST_METHOD'] != 'POST') {
     ));
     exit();
 }
+
+include_once '../conf/db_config.php';
+include_once '../model/JenisHidangan.php';
 
 try {
     $database = new Database();
@@ -29,10 +35,21 @@ try {
     $jenisHidangan = new JenisHidangan($db);
     
     // Get posted data
-    $data = json_decode(file_get_contents("php://input"));
+    $input = file_get_contents("php://input");
+    $data = json_decode($input);
+    
+    // Validate JSON input
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        http_response_code(400);
+        echo json_encode(array(
+            "success" => false,
+            "message" => "Invalid JSON format"
+        ));
+        exit();
+    }
     
     // Validation
-    if (empty($data->nama)) {
+    if (empty($data->nama) || trim($data->nama) === '') {
         http_response_code(400);
         echo json_encode(array(
             "success" => false,
@@ -42,7 +59,7 @@ try {
     }
     
     // Set property values
-    $jenisHidangan->nama = $data->nama;
+    $jenisHidangan->nama = trim($data->nama);
     
     // Check if nama already exists
     if ($jenisHidangan->nameExists()) {
@@ -63,12 +80,12 @@ try {
             "success" => true,
             "message" => "Jenis hidangan berhasil dibuat",
             "data" => array(
-                "id" => $lastInsertId,
+                "id" => (int)$lastInsertId,
                 "nama" => $jenisHidangan->nama
             )
         ));
     } else {
-        http_response_code(503);
+        http_response_code(500);
         echo json_encode(array(
             "success" => false,
             "message" => "Gagal membuat jenis hidangan"
@@ -81,3 +98,4 @@ try {
         "message" => "Server error: " . $e->getMessage()
     ));
 }
+?>

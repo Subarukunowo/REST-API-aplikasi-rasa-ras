@@ -18,14 +18,19 @@ class JenisHidangan {
         return $stmt;
     }
     
-    // Method untuk mendapatkan data berdasarkan ID
+    // Method untuk mendapatkan data berdasarkan ID (return row data)
     public function getById($id) {
         $query = "SELECT * FROM {$this->table} WHERE id = ? LIMIT 0,1";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(1, $id);
         $stmt->execute();
         
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+    
+    // Method untuk load data ke properties object
+    public function loadById($id) {
+        $row = $this->getById($id);
         
         if($row) {
             $this->id = $row['id'];
@@ -46,10 +51,7 @@ class JenisHidangan {
         // Bind data
         $stmt->bindParam(':nama', $this->nama);
         
-        if($stmt->execute()) {
-            return true;
-        }
-        return false;
+        return $stmt->execute();
     }
     
     // Method untuk update data
@@ -65,10 +67,7 @@ class JenisHidangan {
         $stmt->bindParam(':nama', $this->nama);
         $stmt->bindParam(':id', $this->id);
         
-        if($stmt->execute()) {
-            return true;
-        }
-        return false;
+        return $stmt->execute();
     }
     
     // Method untuk delete data
@@ -82,10 +81,7 @@ class JenisHidangan {
         // Bind data
         $stmt->bindParam(1, $this->id);
         
-        if($stmt->execute()) {
-            return true;
-        }
-        return false;
+        return $stmt->execute();
     }
     
     // Method untuk check apakah nama sudah ada
@@ -100,9 +96,16 @@ class JenisHidangan {
         $stmt->bindParam(2, $this->id);
         $stmt->execute();
         
-        if($stmt->rowCount() > 0) {
-            return true;
-        }
-        return false;
+        return $stmt->rowCount() > 0;
+    }
+    
+    // Method untuk count total records
+    public function getTotalCount() {
+        $query = "SELECT COUNT(*) as total FROM {$this->table}";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row['total'];
     }
 }
+?>

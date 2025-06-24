@@ -5,8 +5,11 @@ header("Access-Control-Allow-Methods: PUT, PATCH");
 header("Access-Control-Max-Age: 3600");
 header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
 
-include_once '../config/db_config.php';
-include_once '../model/JenisHidangan.php';
+// Handle preflight OPTIONS request
+if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
 
 // Check request method
 if (!in_array($_SERVER['REQUEST_METHOD'], ['PUT', 'PATCH'])) {
@@ -17,6 +20,9 @@ if (!in_array($_SERVER['REQUEST_METHOD'], ['PUT', 'PATCH'])) {
     ));
     exit();
 }
+
+include_once '../conf/db_config.php';
+include_once '../model/JenisHidangan.php';
 
 try {
     $database = new Database();
@@ -29,19 +35,30 @@ try {
     $jenisHidangan = new JenisHidangan($db);
     
     // Get posted data
-    $data = json_decode(file_get_contents("php://input"));
+    $input = file_get_contents("php://input");
+    $data = json_decode($input);
     
-    // Validation
-    if (empty($data->id)) {
+    // Validate JSON input
+    if (json_last_error() !== JSON_ERROR_NONE) {
         http_response_code(400);
         echo json_encode(array(
             "success" => false,
-            "message" => "ID harus diisi"
+            "message" => "Invalid JSON format"
         ));
         exit();
     }
     
-    if (empty($data->nama)) {
+    // Validation
+    if (empty($data->id) || !is_numeric($data->id) || $data->id <= 0) {
+        http_response_code(400);
+        echo json_encode(array(
+            "success" => false,
+            "message" => "ID harus diisi dan berupa angka yang valid"
+        ));
+        exit();
+    }
+    
+    if (empty($data->nama) || trim($data->nama) === '') {
         http_response_code(400);
         echo json_encode(array(
             "success" => false,
@@ -50,9 +67,9 @@ try {
         exit();
     }
     
-    // Set ID and check if record exists
-    $jenisHidangan->id = $data->id;
-    if (!$jenisHidangan->getById($data->id)) {
+    // Check if record exists
+    $existing = $jenisHidangan->getById($data->id);
+    if (!$existing) {
         http_response_code(404);
         echo json_encode(array(
             "success" => false,
@@ -62,7 +79,8 @@ try {
     }
     
     // Set property values
-    $jenisHidangan->nama = $data->nama;
+    $jenisHidangan->id = $data->id;
+    $jenisHidangan->nama = trim($data->nama);
     
     // Check if nama already exists (exclude current record)
     if ($jenisHidangan->nameExists()) {
@@ -81,12 +99,12 @@ try {
             "success" => true,
             "message" => "Jenis hidangan berhasil diupdate",
             "data" => array(
-                "id" => $jenisHidangan->id,
+                "id" => (int)$jenisHidangan->id,
                 "nama" => $jenisHidangan->nama
             )
         ));
     } else {
-        http_response_code(503);
+        http_response_code(500);
         echo json_encode(array(
             "success" => false,
             "message" => "Gagal mengupdate jenis hidangan"
@@ -99,3 +117,4 @@ try {
         "message" => "Server error: " . $e->getMessage()
     ));
 }
+?>

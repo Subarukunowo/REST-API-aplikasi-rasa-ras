@@ -58,7 +58,7 @@ class Resep {
         return $stmt;
     }
     
-    // Method untuk mendapatkan data berdasarkan ID
+    // Method untuk mendapatkan data berdasarkan ID (return data)
     public function getById($id) {
         $query = "SELECT 
                     r.id,
@@ -88,7 +88,12 @@ class Resep {
         $stmt->bindParam(1, $id);
         $stmt->execute();
         
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+    
+    // Method untuk load data ke properties object
+    public function loadById($id) {
+        $row = $this->getById($id);
         
         if($row) {
             $this->id = $row['id'];
@@ -219,10 +224,7 @@ class Resep {
         $stmt->bindParam(':hidangan_id', $this->hidangan_id);
         $stmt->bindParam(':video', $this->video);
         
-        if($stmt->execute()) {
-            return true;
-        }
-        return false;
+        return $stmt->execute();
     }
     
     // Method untuk update resep
@@ -267,10 +269,7 @@ class Resep {
         $stmt->bindParam(':id', $this->id);
         $stmt->bindParam(':user_id', $this->user_id);
         
-        if($stmt->execute()) {
-            return true;
-        }
-        return false;
+        return $stmt->execute();
     }
     
     // Method untuk delete resep
@@ -284,10 +283,7 @@ class Resep {
         $stmt->bindParam(1, $this->id);
         $stmt->bindParam(2, $this->user_id);
         
-        if($stmt->execute()) {
-            return true;
-        }
-        return false;
+        return $stmt->execute();
     }
     
     // Method untuk validasi foreign key
@@ -346,3 +342,4 @@ class Resep {
         return $row['total'];
     }
 }
+?>

@@ -1,43 +1,162 @@
 <?php
 class Notifikasi {
-    private $conn;
-    private $table = "notifikasi";
+    public $conn;
+    public $table = "notifikasi";
+    
+    public $id;
+    public $user_id;
+    public $pesan;
+    public $is_read;
+    public $created_at;
 
     public function __construct($db) {
         $this->conn = $db;
     }
 
     public function getAll() {
-        $query = "SELECT * FROM $this->table";
-        return $this->conn->query($query);
-    }
-
-    public function getById($id) {
-        $query = "SELECT * FROM $this->table WHERE id = ?";
+        $query = "SELECT n.*, u.username 
+                  FROM {$this->table} n
+                  LEFT JOIN users u ON n.user_id = u.id
+                  ORDER BY n.created_at DESC";
         $stmt = $this->conn->prepare($query);
-        $stmt->execute([$id]);
+        $stmt->execute();
         return $stmt;
     }
 
-    public function create($data) {
-        $query = "INSERT INTO $this->table (user_id, pesan, is_read, created_at) VALUES (?, ?, ?, ?)";
+    public function getById($id) {
+        $query = "SELECT n.*, u.username 
+                  FROM {$this->table} n
+                  LEFT JOIN users u ON n.user_id = u.id
+                  WHERE n.id = ?";
         $stmt = $this->conn->prepare($query);
-        return $stmt->execute([$data['user_id'], $data['pesan'], $data['is_read'], $data['created_at']]);
+        $stmt->bindParam(1, $id);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    public function update($id, $data) {
-        $query = "UPDATE $this->table SET user_id = ?, pesan = ?, is_read = ?, created_at = ? WHERE id = ?";
+    public function getByUserId($user_id, $limit = 0) {
+        $query = "SELECT * FROM {$this->table} 
+                  WHERE user_id = ? 
+                  ORDER BY created_at DESC";
+        
+        if ($limit > 0) {
+            $query .= " LIMIT " . $limit;
+        }
+        
         $stmt = $this->conn->prepare($query);
-        return $stmt->execute([$data['user_id'], $data['pesan'], $data['is_read'], $data['created_at'], $id]);
+        $stmt->bindParam(1, $user_id);
+        $stmt->execute();
+        return $stmt;
     }
 
-    public function delete($id) {
-        $query = "DELETE FROM $this->table WHERE id = ?";
+    public function getUnreadByUser($user_id) {
+        $query = "SELECT * FROM {$this->table} 
+                  WHERE user_id = ? AND is_read = 0 
+                  ORDER BY created_at DESC";
         $stmt = $this->conn->prepare($query);
-        return $stmt->execute([$id]);
+        $stmt->bindParam(1, $user_id);
+        $stmt->execute();
+        return $stmt;
     }
-    public function read() {
-        $query = "SELECT * FROM notifikasi";
-        return $this->conn->query($query);
+
+    public function create() {
+        $query = "INSERT INTO {$this->table} (user_id, pesan, is_read, created_at) 
+                  VALUES (:user_id, :pesan, :is_read, NOW())";
+        $stmt = $this->conn->prepare($query);
+
+        // Sanitize input
+        $this->user_id = htmlspecialchars(strip_tags($this->user_id));
+        $this->pesan = htmlspecialchars(strip_tags($this->pesan));
+        $this->is_read = isset($this->is_read) ? $this->is_read : 0;
+
+        $stmt->bindParam(':user_id', $this->user_id);
+        $stmt->bindParam(':pesan', $this->pesan);
+        $stmt->bindParam(':is_read', $this->is_read);
+
+        return $stmt->execute();
+    }
+
+    public function update() {
+        $query = "UPDATE {$this->table} SET 
+                    pesan = :pesan, 
+                    is_read = :is_read 
+                  WHERE id = :id";
+        $stmt = $this->conn->prepare($query);
+
+        // Sanitize input
+        $this->id = htmlspecialchars(strip_tags($this->id));
+        $this->pesan = htmlspecialchars(strip_tags($this->pesan));
+        $this->is_read = isset($this->is_read) ? $this->is_read : 0;
+
+        $stmt->bindParam(':pesan', $this->pesan);
+        $stmt->bindParam(':is_read', $this->is_read);
+        $stmt->bindParam(':id', $this->id);
+
+        return $stmt->execute();
+    }
+
+    public function markAsRead($id) {
+        $query = "UPDATE {$this->table} SET is_read = 1 WHERE id = ?";
+        $stmt = $this->conn->prepare($query);
+        
+        $id = htmlspecialchars(strip_tags($id));
+        $stmt->bindParam(1, $id);
+        
+        return $stmt->execute();
+    }
+
+    public function markAllAsReadForUser($user_id) {
+        $query = "UPDATE {$this->table} SET is_read = 1 WHERE user_id = ?";
+        $stmt = $this->conn->prepare($query);
+        
+        $user_id = htmlspecialchars(strip_tags($user_id));
+        $stmt->bindParam(1, $user_id);
+        
+        return $stmt->execute();
+    }
+
+    public function delete() {
+        $query = "DELETE FROM {$this->table} WHERE id = ?";
+        $stmt = $this->conn->prepare($query);
+        
+        $this->id = htmlspecialchars(strip_tags($this->id));
+        $stmt->bindParam(1, $this->id);
+        
+        return $stmt->execute();
+    }
+
+    public function countUnreadForUser($user_id) {
+        $query = "SELECT COUNT(*) as total FROM {$this->table} 
+                  WHERE user_id = ? AND is_read = 0";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(1, $user_id);
+        $stmt->execute();
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row['total'];
+    }
+
+    public function validateForeignKeys() {
+        $errors = array();
+        
+        // Check user_id
+        if ($this->user_id) {
+            $query = "SELECT id FROM users WHERE id = ?";
+            $stmt = $this->conn->prepare($query);
+            $stmt->execute([$this->user_id]);
+            if ($stmt->rowCount() == 0) {
+                $errors[] = "User ID tidak valid";
+            }
+        }
+        
+        return $errors;
+    }
+    
+    public function getTotalCount() {
+        $query = "SELECT COUNT(*) as total FROM {$this->table}";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row['total'];
     }
 }
+?>

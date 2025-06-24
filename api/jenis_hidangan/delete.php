@@ -5,8 +5,11 @@ header("Access-Control-Allow-Methods: DELETE");
 header("Access-Control-Max-Age: 3600");
 header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
 
-include_once '../config/db_config.php';
-include_once '../model/JenisHidangan.php';
+// Handle preflight OPTIONS request
+if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
 
 // Check request method
 if ($_SERVER['REQUEST_METHOD'] != 'DELETE') {
@@ -17,6 +20,9 @@ if ($_SERVER['REQUEST_METHOD'] != 'DELETE') {
     ));
     exit();
 }
+
+include_once '../conf/db_config.php';
+include_once '../model/JenisHidangan.php';
 
 try {
     $database = new Database();
@@ -35,8 +41,10 @@ try {
         $id = intval($_GET['id']);
     } else {
         // Try to get from JSON body
-        $data = json_decode(file_get_contents("php://input"));
-        if (isset($data->id)) {
+        $input = file_get_contents("php://input");
+        $data = json_decode($input);
+        
+        if ($data && isset($data->id)) {
             $id = intval($data->id);
         }
     }
@@ -46,13 +54,14 @@ try {
         http_response_code(400);
         echo json_encode(array(
             "success" => false,
-            "message" => "ID harus diisi dan valid"
+            "message" => "ID harus diisi dan berupa angka yang valid"
         ));
         exit();
     }
     
-    // Check if record exists
-    if (!$jenisHidangan->getById($id)) {
+    // Check if record exists and get data before deletion
+    $existing = $jenisHidangan->getById($id);
+    if (!$existing) {
         http_response_code(404);
         echo json_encode(array(
             "success" => false,
@@ -63,8 +72,8 @@ try {
     
     // Store data before deletion for response
     $deletedData = array(
-        "id" => $jenisHidangan->id,
-        "nama" => $jenisHidangan->nama
+        "id" => (int)$existing['id'],
+        "nama" => $existing['nama']
     );
     
     // Set ID and delete
@@ -78,7 +87,7 @@ try {
             "deleted_data" => $deletedData
         ));
     } else {
-        http_response_code(503);
+        http_response_code(500);
         echo json_encode(array(
             "success" => false,
             "message" => "Gagal menghapus jenis hidangan"
@@ -91,3 +100,4 @@ try {
         "message" => "Server error: " . $e->getMessage()
     ));
 }
+?>

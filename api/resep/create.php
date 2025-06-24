@@ -1,106 +1,86 @@
 <?php
+// ===== FILE: api/resep/create.php =====
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Methods: POST");
-header("Access-Control-Max-Age: 3600");
 header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
 
-include_once '../config/db_config.php';
-include_once '../model/Resep.php';
-
-// Check request method
-if ($_SERVER['REQUEST_METHOD'] != 'POST') {
-    http_response_code(405);
-    echo json_encode(array(
-        "success" => false,
-        "message" => "Method tidak diizinkan"
-    ));
+if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+    http_response_code(200);
     exit();
 }
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    echo json_encode(["success" => false, "message" => "Method not allowed"]);
+    exit();
+}
+
+include_once '../conf/db_config.php';
+include_once '../model/Resep.php';
 
 try {
     $database = new Database();
     $db = $database->connect();
-    
-    if (!$db) {
-        throw new Exception("Koneksi database gagal");
-    }
-    
     $resep = new Resep($db);
     
-    // Get posted data
-    $data = json_decode(file_get_contents("php://input"));
+    $input = file_get_contents("php://input");
+    $data = json_decode($input);
     
-    // Validation required fields
-    $required_fields = ['user_id', 'nama_masakan', 'kategori_id', 'waktu_memasak', 
-                       'bahan_utama', 'deskripsi', 'level_kesulitan', 'waktu_id', 'hidangan_id'];
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        http_response_code(400);
+        echo json_encode(["success" => false, "message" => "Invalid JSON format"]);
+        exit();
+    }
     
-    $missing_fields = array();
+    // Validation
+    $required_fields = ['user_id', 'nama_masakan', 'kategori_id', 'waktu_memasak', 'bahan_utama', 'deskripsi', 'level_kesulitan'];
     foreach ($required_fields as $field) {
         if (empty($data->$field)) {
-            $missing_fields[] = $field;
+            http_response_code(400);
+            echo json_encode(["success" => false, "message" => "Field $field harus diisi"]);
+            exit();
         }
     }
     
-    if (!empty($missing_fields)) {
-        http_response_code(400);
-        echo json_encode(array(
-            "success" => false,
-            "message" => "Field berikut harus diisi: " . implode(', ', $missing_fields)
-        ));
-        exit();
-    }
-    
-    // Validation level_kesulitan
-    $valid_levels = ['Mudah', 'Sedang', 'Sulit'];
-    if (!in_array($data->level_kesulitan, $valid_levels)) {
-        http_response_code(400);
-        echo json_encode(array(
-            "success" => false,
-            "message" => "Level kesulitan harus: " . implode(', ', $valid_levels)
-        ));
-        exit();
-    }
-    
-    // Validation waktu_memasak (should be positive integer)
-    if (!is_numeric($data->waktu_memasak) || $data->waktu_memasak <= 0) {
-        http_response_code(400);
-        echo json_encode(array(
-            "success" => false,
-            "message" => "Waktu memasak harus berupa angka positif (dalam menit)"
-        ));
-        exit();
-    }
-    
-    // Set property values
+    // Set properties
     $resep->user_id = $data->user_id;
-    $resep->nama_masakan = $data->nama_masakan;
+    $resep->nama_masakan = trim($data->nama_masakan);
     $resep->kategori_id = $data->kategori_id;
     $resep->waktu_memasak = $data->waktu_memasak;
-    $resep->bahan_utama = $data->bahan_utama;
-    $resep->deskripsi = $data->deskripsi;
+    $resep->bahan_utama = trim($data->bahan_utama);
+    $resep->deskripsi = trim($data->deskripsi);
     $resep->level_kesulitan = $data->level_kesulitan;
-    $resep->waktu_id = $data->waktu_id;
-    $resep->hidangan_id = $data->hidangan_id;
-    $resep->video = isset($data->video) ? $data->video : null;
+    $resep->waktu_id = isset($data->waktu_id) ? $data->waktu_id : null;
+    $resep->hidangan_id = isset($data->hidangan_id) ? $data->hidangan_id : null;
+    $resep->video = isset($data->video) ? trim($data->video) : null;
     
     // Validate foreign keys
     $validation_errors = $resep->validateForeignKeys();
     if (!empty($validation_errors)) {
         http_response_code(400);
-        echo json_encode(array(
-            "success" => false,
-            "message" => "Validation error",
-            "errors" => $validation_errors
-        ));
+        echo json_encode(["success" => false, "message" => implode(", ", $validation_errors)]);
         exit();
     }
-}
-catch (Exception $e) {
+    
+    if ($resep->create()) {
+        $lastInsertId = $db->lastInsertId();
+        
+        http_response_code(201);
+        echo json_encode([
+            "success" => true,
+            "message" => "Resep berhasil dibuat",
+            "data" => [
+                "id" => (int)$lastInsertId,
+                "nama_masakan" => $resep->nama_masakan,
+                "level_kesulitan" => $resep->level_kesulitan
+            ]
+        ]);
+    } else {
+        http_response_code(500);
+        echo json_encode(["success" => false, "message" => "Gagal membuat resep"]);
+    }
+} catch (Exception $e) {
     http_response_code(500);
-    echo json_encode(array(
-        "success" => false,
-        "message" => "Server error: " . $e->getMessage()
-    ));
-    exit();
+    echo json_encode(["success" => false, "message" => "Server error: " . $e->getMessage()]);
 }

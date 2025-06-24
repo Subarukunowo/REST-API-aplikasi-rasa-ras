@@ -1,6 +1,6 @@
 <?php
 // === FILE: api/komentar/update.php ===
-include_once '../config/db_config.php';
+include_once '../conf/db_config.php';
 include_once '../../model/Komentar.php';
 
 $db = new Database();

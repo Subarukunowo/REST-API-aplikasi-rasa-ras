@@ -1,6 +1,6 @@
 <?php
 require_once '../conf/db_config.php';
-require_once '../../model/Notifikasi.php';
+require_once '../model/Notifikasi.php';
 
 $database = new Database();
 $db = $database->connect();
