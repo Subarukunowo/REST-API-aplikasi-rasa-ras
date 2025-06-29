@@ -52,7 +52,7 @@ try {
     // Set properties
     $user->username = trim($data->username);
     $user->email = trim($data->email);
-    $user->password = $data->password;
+   $user->password = password_hash($data->password, PASSWORD_DEFAULT);
     $user->role = isset($data->role) ? $data->role : 'user';
     $user->is_blocked = isset($data->is_blocked) ? $data->is_blocked : 0;
     
