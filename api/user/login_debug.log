@@ -1,0 +1,54 @@
+[29-Jun-2025 17:30:58 Europe/Berlin] Login attempt - Username: 'rin123'
+[29-Jun-2025 17:30:58 Europe/Berlin] User found: Yes
+[29-Jun-2025 17:30:58 Europe/Berlin] User data - ID: 17, Username: rin123, Blocked: 0
+[29-Jun-2025 17:30:58 Europe/Berlin] Password verification:
+[29-Jun-2025 17:30:58 Europe/Berlin] - Input password length: 6
+[29-Jun-2025 17:30:58 Europe/Berlin] - Stored hash: $2y$10$799s31X/T.ESU...
+[29-Jun-2025 17:30:58 Europe/Berlin] - Hash format: $2y$10$
+[29-Jun-2025 17:30:58 Europe/Berlin] - Verification result: INVALID
+[29-Jun-2025 17:30:58 Europe/Berlin] Login failed: Invalid password for username 'rin123'
+[29-Jun-2025 17:31:20 Europe/Berlin] Login attempt - Username: 'rin123'
+[29-Jun-2025 17:31:20 Europe/Berlin] User found: Yes
+[29-Jun-2025 17:31:20 Europe/Berlin] User data - ID: 17, Username: rin123, Blocked: 0
+[29-Jun-2025 17:31:20 Europe/Berlin] Password verification:
+[29-Jun-2025 17:31:20 Europe/Berlin] - Input password length: 6
+[29-Jun-2025 17:31:20 Europe/Berlin] - Stored hash: $2y$10$799s31X/T.ESU...
+[29-Jun-2025 17:31:20 Europe/Berlin] - Hash format: $2y$10$
+[29-Jun-2025 17:31:20 Europe/Berlin] - Verification result: INVALID
+[29-Jun-2025 17:31:20 Europe/Berlin] Login failed: Invalid password for username 'rin123'
+[29-Jun-2025 17:31:22 Europe/Berlin] Login attempt - Username: 'rin123'
+[29-Jun-2025 17:31:22 Europe/Berlin] User found: Yes
+[29-Jun-2025 17:31:22 Europe/Berlin] User data - ID: 17, Username: rin123, Blocked: 0
+[29-Jun-2025 17:31:22 Europe/Berlin] Password verification:
+[29-Jun-2025 17:31:22 Europe/Berlin] - Input password length: 6
+[29-Jun-2025 17:31:22 Europe/Berlin] - Stored hash: $2y$10$799s31X/T.ESU...
+[29-Jun-2025 17:31:22 Europe/Berlin] - Hash format: $2y$10$
+[29-Jun-2025 17:31:22 Europe/Berlin] - Verification result: INVALID
+[29-Jun-2025 17:31:22 Europe/Berlin] Login failed: Invalid password for username 'rin123'
+[29-Jun-2025 17:31:35 Europe/Berlin] Login attempt - Username: 'rin123'
+[29-Jun-2025 17:31:35 Europe/Berlin] User found: Yes
+[29-Jun-2025 17:31:35 Europe/Berlin] User data - ID: 17, Username: rin123, Blocked: 0
+[29-Jun-2025 17:31:35 Europe/Berlin] Password verification:
+[29-Jun-2025 17:31:35 Europe/Berlin] - Input password length: 6
+[29-Jun-2025 17:31:35 Europe/Berlin] - Stored hash: $2y$10$799s31X/T.ESU...
+[29-Jun-2025 17:31:35 Europe/Berlin] - Hash format: $2y$10$
+[29-Jun-2025 17:31:35 Europe/Berlin] - Verification result: INVALID
+[29-Jun-2025 17:31:35 Europe/Berlin] Login failed: Invalid password for username 'rin123'
+[29-Jun-2025 17:31:57 Europe/Berlin] Login attempt - Username: 'rin123'
+[29-Jun-2025 17:31:57 Europe/Berlin] User found: Yes
+[29-Jun-2025 17:31:57 Europe/Berlin] User data - ID: 17, Username: rin123, Blocked: 0
+[29-Jun-2025 17:31:57 Europe/Berlin] Password verification:
+[29-Jun-2025 17:31:57 Europe/Berlin] - Input password length: 60
+[29-Jun-2025 17:31:57 Europe/Berlin] - Stored hash: $2y$10$799s31X/T.ESU...
+[29-Jun-2025 17:31:57 Europe/Berlin] - Hash format: $2y$10$
+[29-Jun-2025 17:31:57 Europe/Berlin] - Verification result: INVALID
+[29-Jun-2025 17:31:57 Europe/Berlin] Login failed: Invalid password for username 'rin123'
+[29-Jun-2025 17:31:58 Europe/Berlin] Login attempt - Username: 'rin123'
+[29-Jun-2025 17:31:58 Europe/Berlin] User found: Yes
+[29-Jun-2025 17:31:58 Europe/Berlin] User data - ID: 17, Username: rin123, Blocked: 0
+[29-Jun-2025 17:31:59 Europe/Berlin] Password verification:
+[29-Jun-2025 17:31:59 Europe/Berlin] - Input password length: 60
+[29-Jun-2025 17:31:59 Europe/Berlin] - Stored hash: $2y$10$799s31X/T.ESU...
+[29-Jun-2025 17:31:59 Europe/Berlin] - Hash format: $2y$10$
+[29-Jun-2025 17:31:59 Europe/Berlin] - Verification result: INVALID
+[29-Jun-2025 17:31:59 Europe/Berlin] Login failed: Invalid password for username 'rin123'
