@@ -218,5 +218,36 @@ class Resep {
     public function validateJenisWaktu($jenis) {
         return in_array($jenis, ['Sarapan', 'Makan Siang', 'Makan Malam']);
     }
+  public function createWithSteps($steps) {
+    $this->conn->beginTransaction();
+
+    try {
+        if (!$this->create()) {
+            throw new Exception("Gagal membuat resep utama.");
+        }
+
+        $resep_id = $this->conn->lastInsertId();
+
+        foreach ($steps as $index => $step) {
+            $langkah = new LangkahResep($this->conn);
+            $langkah->resep_id = $resep_id;
+            $langkah->urutan = $index + 1;
+            $langkah->judul = $step->judul;        // ← pakai object notation
+            $langkah->deskripsi = $step->deskripsi;
+
+            if (!$langkah->create()) {
+                throw new Exception("Gagal menambahkan langkah resep.");
+            }
+        }
+
+        $this->conn->commit();
+        return true;
+
+    } catch (Exception $e) {
+        $this->conn->rollBack();
+        return false;
+    }
+}
+
 }
 ?>

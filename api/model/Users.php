@@ -10,9 +10,10 @@ class Users {
     public $role;
     public $is_blocked;
     public $created_at;
-
+public $token;
     public function __construct($db) {
         $this->conn = $db;
+        
     }
 
     public function getAll() {
@@ -105,52 +106,50 @@ public function update() {
         return $stmt->execute();
     }
 
-    public function login($username, $password) {
-        try {
-            // Trim whitespace saja, jangan gunakan htmlspecialchars untuk login
-            $username = trim($username);
-            
-            // Query untuk mendapatkan data pengguna
-            $query = "SELECT id, username, password, email, role, is_blocked FROM {$this->table} 
-                      WHERE username = ? LIMIT 1";
-            $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(1, $username);
-            $stmt->execute();
+  public function login($username, $password) {
+    try {
+        $username = trim($username);
 
-            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        $query = "SELECT id, username, password, email, role, is_blocked FROM {$this->table} 
+                  WHERE username = ? LIMIT 1";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(1, $username);
+        $stmt->execute();
 
-            if (!$row) {
-                return false; // Pengguna tidak ditemukan
-            }
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            // Periksa apakah pengguna diblokir
-            if (intval($row['is_blocked']) === 1) {
-                return false; // Pengguna diblokir
-            }
-
-            // Verifikasi password - JANGAN gunakan htmlspecialchars untuk password
-            $stored_hash = $row['password'];
-            $password_valid = password_verify($password, $stored_hash);
-
-            if ($password_valid) {
-                // Set properti pengguna
-                $this->id = $row['id'];
-                $this->username = $row['username'];
-                $this->email = $row['email'];
-                $this->role = $row['role'];
-                $this->is_blocked = intval($row['is_blocked']);
-                
-                return true;
-            }
-
-            return false; // Password tidak cocok
-            
-        } catch (Exception $e) {
-            error_log("Login error: " . $e->getMessage());
+        if (!$row || intval($row['is_blocked']) === 1) {
             return false;
         }
-    }
 
+        $stored_hash = $row['password'];
+        $password_valid = password_verify($password, $stored_hash);
+
+        if ($password_valid) {
+            // Generate token random
+            $this->token = bin2hex(random_bytes(32)); // 64 karakter
+
+            // Simpan token ke database
+            $update = $this->conn->prepare("UPDATE {$this->table} SET token = ? WHERE id = ?");
+            $update->execute([$this->token, $row['id']]);
+
+            // Set properti user
+            $this->id = $row['id'];
+            $this->username = $row['username'];
+            $this->email = $row['email'];
+            $this->role = $row['role'];
+            $this->is_blocked = intval($row['is_blocked']);
+
+            return true;
+        }
+
+        return false;
+
+    } catch (Exception $e) {
+        error_log("Login error: " . $e->getMessage());
+        return false;
+    }
+}
     public function usernameExists() {
         $query = "SELECT id FROM {$this->table} WHERE username = ? AND id != ?";
         $stmt = $this->conn->prepare($query);
