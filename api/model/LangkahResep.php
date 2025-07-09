@@ -11,8 +11,7 @@ class LangkahResep {
     public $urutan;
     public $judul;
     public $deskripsi;
-    public $created_at;
-    public $updated_at;
+
 
     public function __construct($db) {
         $this->conn = $db;
@@ -43,21 +42,18 @@ class LangkahResep {
         }
         return false;
     }
+public function readByResepId() {
+    $query = "SELECT id, resep_id, urutan, judul, deskripsi
+              FROM " . $this->table_name . " 
+              WHERE resep_id = :resep_id 
+              ORDER BY urutan ASC";
+    
+    $stmt = $this->conn->prepare($query);
+    $stmt->bindParam(":resep_id", $this->resep_id);
+    $stmt->execute();
 
-    // Read all langkah resep by resep_id
-    function readByResepId() {
-        $query = "SELECT id, resep_id, urutan, judul, deskripsi, created_at, updated_at 
-                 FROM " . $this->table_name . " 
-                 WHERE resep_id = :resep_id 
-                 ORDER BY urutan ASC";
-        
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(":resep_id", $this->resep_id);
-        $stmt->execute();
-        
-        return $stmt;
-    }
-
+    return $stmt;
+}
     // Read all langkah resep
     function readAll() {
         $query = "SELECT lr.id, lr.resep_id, lr.urutan, lr.judul, lr.deskripsi, 
@@ -93,8 +89,7 @@ class LangkahResep {
             $this->urutan = $row['urutan'];
             $this->judul = $row['judul'];
             $this->deskripsi = $row['deskripsi'];
-            $this->created_at = $row['created_at'];
-            $this->updated_at = $row['updated_at'];
+        
             return true;
         }
         return false;
@@ -202,5 +197,6 @@ class LangkahResep {
             return false;
         }
     }
+    
 }
 ?>
