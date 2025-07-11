@@ -66,28 +66,38 @@ class Profil {
     }
 
     public function update() {
-        $query = "UPDATE {$this->table} SET 
-                    nama_lengkap = :nama_lengkap, 
-                    foto = :foto, 
-                    bio = :bio 
-                  WHERE id = :id AND user_id = :user_id";
-        $stmt = $this->conn->prepare($query);
+    $fields = [];
+    $params = [];
 
-        // Sanitize input
-        $this->id = htmlspecialchars(strip_tags($this->id));
-        $this->user_id = htmlspecialchars(strip_tags($this->user_id));
-        $this->nama_lengkap = htmlspecialchars(strip_tags($this->nama_lengkap));
-        $this->foto = htmlspecialchars(strip_tags($this->foto));
-        $this->bio = htmlspecialchars(strip_tags($this->bio));
-
-        $stmt->bindParam(':nama_lengkap', $this->nama_lengkap);
-        $stmt->bindParam(':foto', $this->foto);
-        $stmt->bindParam(':bio', $this->bio);
-        $stmt->bindParam(':id', $this->id);
-        $stmt->bindParam(':user_id', $this->user_id);
-
-        return $stmt->execute();
+    if (!empty($this->nama_lengkap)) {
+        $fields[] = "nama_lengkap = :nama_lengkap";
+        $params[':nama_lengkap'] = htmlspecialchars(strip_tags($this->nama_lengkap));
     }
+
+    if (!empty($this->foto)) {
+        $fields[] = "foto = :foto";
+        $params[':foto'] = htmlspecialchars(strip_tags($this->foto));
+    }
+
+    if (!empty($this->bio)) {
+        $fields[] = "bio = :bio";
+        $params[':bio'] = htmlspecialchars(strip_tags($this->bio));
+    }
+
+    // Tetap wajib
+    $params[':id'] = htmlspecialchars(strip_tags($this->id));
+    $params[':user_id'] = htmlspecialchars(strip_tags($this->user_id));
+
+    // Jika tidak ada field yang akan diupdate, batalkan
+    if (empty($fields)) {
+        return false;
+    }
+
+    $query = "UPDATE {$this->table} SET " . implode(', ', $fields) . " WHERE id = :id AND user_id = :user_id";
+    $stmt = $this->conn->prepare($query);
+
+    return $stmt->execute($params);
+}
 
    public function delete() {
     $query = "DELETE FROM {$this->table} WHERE id = ?";

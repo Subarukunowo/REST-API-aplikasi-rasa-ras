@@ -1,19 +1,20 @@
 <?php
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json");
-header("Content-Type: multipart/form-data");
-include_once "../conf/db_config.php";
-include_once "../model/Profil.php";
-include_once "../model/Users.php";
+
+require_once "../conf/db_config.php";
+require_once "../model/Profil.php";
+require_once "../model/Users.php";
 
 $database = new Database();
 $db = $database->connect();
 
-// Validasi ID yang wajib
-if (
-    empty($_POST['id']) ||
-    empty($_POST['user_id'])
-) {
+// Ambil dan decode input JSON
+$inputRaw = file_get_contents("php://input");
+$data = json_decode($inputRaw, true);
+
+// Validasi wajib
+if (empty($data['id']) || empty($data['user_id'])) {
     http_response_code(400);
     echo json_encode([
         "success" => false,
@@ -22,84 +23,94 @@ if (
     exit();
 }
 
-// ==================== HANDLE FILE UPLOAD FOTO ====================
-$uploadedFileName = null;
-$targetDir = "../images/";
+// ===================== SIMPAN GAMBAR (jika ada) =====================
+if (!empty($data['foto_base64']) && !empty($data['foto'])) {
+    $fileName = basename($data['foto']);
+    $fileData = base64_decode($data['foto_base64']);
+    $targetDir = "../images/";
 
-if (isset($_FILES['foto']) && $_FILES['foto']['error'] === UPLOAD_ERR_OK) {
-    $fileTmpPath = $_FILES['foto']['tmp_name'];
-    $fileName = basename($_FILES['foto']['name']);
-    $targetFilePath = $targetDir . $fileName;
+    // Buat folder jika belum ada
+    if (!is_dir($targetDir)) {
+        if (!mkdir($targetDir, 0755, true)) {
+            http_response_code(500);
+            echo json_encode([
+                "success" => false,
+                "message" => "Folder tujuan gambar tidak tersedia dan gagal dibuat."
+            ]);
+            exit();
+        }
+    }
 
-    if (move_uploaded_file($fileTmpPath, $targetFilePath)) {
-        $uploadedFileName = $fileName;
-    } else {
+    $filePath = $targetDir . $fileName;
+
+    if (file_put_contents($filePath, $fileData) === false) {
+        http_response_code(500);
         echo json_encode([
             "success" => false,
-            "message" => "Gagal mengunggah gambar."
+            "message" => "Gagal menyimpan file gambar ke server."
         ]);
         exit();
     }
-} else {
-    $uploadedFileName = isset($_POST['foto']) ? $_POST['foto'] : null;
+
+    // ✅ Pastikan disiapkan untuk update ke database
+    $data['foto'] = $fileName;
 }
 
-// ==================== UPDATE PROFIL ====================
+// ===================== UPDATE PROFIL =====================
 $profilFields = [];
 $profilParams = [];
 
-if (isset($_POST['nama_lengkap'])) {
+if (!empty($data['nama_lengkap'])) {
     $profilFields[] = "nama_lengkap=?";
-    $profilParams[] = $_POST['nama_lengkap'];
+    $profilParams[] = $data['nama_lengkap'];
 }
-if (isset($_POST['bio'])) {
+if (!empty($data['bio'])) {
     $profilFields[] = "bio=?";
-    $profilParams[] = $_POST['bio'];
+    $profilParams[] = $data['bio'];
 }
-if ($uploadedFileName !== null) {
+if (!empty($data['foto'])) {
     $profilFields[] = "foto=?";
-    $profilParams[] = $uploadedFileName;
+    $profilParams[] = $data['foto'];
 }
 
-// Tambahkan user_id dan id (untuk WHERE clause)
-$profilFields[] = "user_id=?";
-$profilParams[] = $_POST['user_id'];
-$profilParams[] = $_POST['id'];
+// ❌ PERBAIKI bagian WHERE
+$profilParams[] = $data['id'];
+$profilParams[] = $data['user_id'];
 
-$query = "UPDATE profil SET " . implode(", ", $profilFields) . " WHERE id=?";
-$stmt = $db->prepare($query);
-$resultProfil = $stmt->execute($profilParams);
+$profilQuery = "UPDATE profil SET " . implode(", ", $profilFields) . " WHERE id=? AND user_id=?";
+$profilStmt = $db->prepare($profilQuery);
+$resultProfil = $profilStmt->execute($profilParams);
 
-// ==================== UPDATE USER (hanya username, email, is_blocked) ====================
+// ===================== UPDATE USERS =====================
 $userFields = [];
 $userParams = [];
 
-if (isset($_POST['username'])) {
+if (!empty($data['username'])) {
     $userFields[] = "username=?";
-    $userParams[] = $_POST['username'];
+    $userParams[] = $data['username'];
 }
-if (isset($_POST['email'])) {
+if (!empty($data['email'])) {
     $userFields[] = "email=?";
-    $userParams[] = $_POST['email'];
+    $userParams[] = $data['email'];
 }
-if (isset($_POST['is_blocked'])) {
+if (isset($data['is_blocked'])) {
     $userFields[] = "is_blocked=?";
-    $userParams[] = $_POST['is_blocked'];
+    $userParams[] = $data['is_blocked'];
 }
 
 if (!empty($userFields)) {
-    $userParams[] = $_POST['user_id'];
-    $queryUser = "UPDATE users SET " . implode(", ", $userFields) . " WHERE id=?";
-    $stmtUser = $db->prepare($queryUser);
-    $resultUser = $stmtUser->execute($userParams);
+    $userParams[] = $data['user_id'];
+    $userQuery = "UPDATE users SET " . implode(", ", $userFields) . " WHERE id=?";
+    $userStmt = $db->prepare($userQuery);
+    $resultUser = $userStmt->execute($userParams);
 } else {
     $resultUser = true;
 }
 
-// ==================== RESPON ====================
+// ===================== RESPON =====================
 echo json_encode([
     "success" => $resultProfil && $resultUser,
-    "message" => $resultProfil && $resultUser
+    "message" => ($resultProfil && $resultUser)
         ? "Berhasil memperbarui data profil dan pengguna."
-        : "Gagal memperbarui data.",
+        : "Gagal memperbarui data."
 ]);

@@ -5,6 +5,7 @@ header("Content-Type: application/json");
 include_once "../conf/db_config.php";
 include_once "../model/Profil.php";
 
+
 $database = new Database();
 $db = $database->connect();
 
